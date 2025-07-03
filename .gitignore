@@ -34,7 +34,7 @@ ScaffoldingReadMe.txt
 
 # Publish outputs
 /app.publish/
-#/out/
+/out/
 
 ##################################
 # 👉 React frontend (nếu có)

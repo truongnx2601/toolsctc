@@ -1,20 +1,18 @@
-﻿# Giai đoạn build
+﻿# ---------- Build stage ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Copy csproj và restore
-COPY *.sln .
-COPY ToolsCTC/*.csproj ./ToolsCTC/
+# Copy file csproj và khôi phục gói
+COPY ToolsCTC.csproj ./
 RUN dotnet restore
 
-# Copy tất cả và build
-COPY . .
-WORKDIR /app/ToolsCTC.API
-RUN dotnet publish -c Release -o /app/out
+# Copy toàn bộ source code vào container
+COPY . ./
+RUN dotnet publish -c Release -o /out
 
-# Giai đoạn runtime
+# ---------- Runtime stage ----------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /out ./
 
 ENTRYPOINT ["dotnet", "ToolsCTC.dll"]
