@@ -1,0 +1,10 @@
+﻿services:
+  - type: web
+    name: excel-compare-backend
+    env: dotnet
+    plan: free
+    buildCommand: dotnet build
+    startCommand: dotnet ToolsCTC.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
