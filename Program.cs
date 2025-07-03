@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Http.Features;
+﻿var builder = WebApplication.CreateBuilder(args);
 
-var builder = WebApplication.CreateBuilder(args);
+// Lấy PORT từ Render, nếu không có thì dùng 5000
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-builder.Services.Configure<FormOptions>(options =>
-{
-    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100 MB
-});
 
 // Load cấu hình CORS từ appsettings
 var allowedOrigins = builder.Configuration
