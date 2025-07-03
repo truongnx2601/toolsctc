@@ -125,11 +125,13 @@
             var lstCheck = list
                     .GroupBy(x => new
                     {
-                        HoTen = NormalizeVietnamese(x.FullName).Trim().ToLower(),
-                        NgaySinh = x.Birthday.Date,
-                        NgayTiem = x.VaccineDate.Date,
-                        TenVaccine = x.VaccineName?.Replace(" ", "").ToLower(),
-                        DiaChi = x.Address
+                        hoTen = NormalizeVietnamese(x.FullName).Trim().ToLower(),
+                        ngaySinh = x.Birthday.Date,
+                        ngayTiem = x.VaccineDate.Date,
+                        tenVaccine = x.VaccineName?.Replace(" ", "").ToLower(),
+                        diaChi = x.Address,
+                        sdt = "",
+                        nguoiLienHe = ""
                     })
                     .Where(g => g.Count() > 1)
                     .SelectMany(g => g)
