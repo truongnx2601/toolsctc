@@ -117,27 +117,36 @@
             return lstCheck;
         }
 
-        public List<Imports> CheckDup(Stream streamCTC, string nameCTC)
+        public List<ImportsInjection> CheckDup(Stream streamCTC, string nameCTC)
         {
             var list = ReadCTC(streamCTC, nameCTC);
 
-            // Kiểm tra người có bị trùng không
             var lstCheck = list
-                    .GroupBy(x => new
-                    {
-                        hoTen = NormalizeVietnamese(x.FullName).Trim().ToLower(),
-                        ngaySinh = x.Birthday.Date,
-                        ngayTiem = x.VaccineDate.Date,
-                        tenVaccine = x.VaccineName?.Replace(" ", "").ToLower(),
-                        diaChi = x.Address,
-                        sdt = "",
-                        nguoiLienHe = ""
-                    })
-                    .Where(g => g.Count() > 1)
-                    .SelectMany(g => g)
-                    .ToList();
+                .GroupBy(x => new
+                {
+                    hoTen = NormalizeVietnamese(x.FullName).Trim().ToLower(),
+                    ngaySinh = x.Birthday.Date,
+                    ngayTiem = x.VaccineDate.Date,
+                    tenVaccine = x.VaccineName?.Replace(" ", "").ToLower(),
+                    diaChi = x.Address?.Trim().ToLower()
+                })
+                .Where(g => g.Count() > 1)
+                .SelectMany(g => g)
+                .ToList();
 
-            return lstCheck;
+            // Mapping sang dạng frontend cần
+            var result = lstCheck.Select(x => new ImportsInjection
+            {
+                HoTen = x.FullName,
+                NgaySinh = x.Birthday,
+                NgayTiem = x.VaccineDate,
+                TenVaccine = x.VaccineName,
+                DiaChi = x.Address,
+                SDT = "", // nếu có thì truyền từ x
+                NguoiLH = "" // nếu có thì truyền từ x
+            }).ToList();
+
+            return result;
         }
 
         public static string NormalizeVaccineName(string name)
