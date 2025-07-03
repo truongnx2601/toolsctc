@@ -117,6 +117,26 @@
             return lstCheck;
         }
 
+        public List<Imports> CheckDup(Stream streamCTC, string nameCTC)
+        {
+            var list = ReadCTC(streamCTC, nameCTC);
+
+            // Kiểm tra người có bị trùng không
+            var lstCheck = list
+                    .GroupBy(x => new
+                    {
+                        FullName = NormalizeVietnamese(x.FullName).Trim().ToLower(),
+                        VaccineName = x.VaccineName?.Replace(" ", "").ToLower(),
+                        Birthday = x.Birthday.Date,
+                        FacID = x.FacID?.Trim().ToLower()
+                    })
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g)
+                    .ToList();
+
+            return lstCheck;
+        }
+
         public static string NormalizeVaccineName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return "";

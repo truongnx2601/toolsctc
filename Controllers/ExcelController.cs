@@ -30,8 +30,7 @@ namespace ToolsCTC.Controllers
                 await fileQAS.CopyToAsync(memoryQAS);
                 memoryQAS.Position = 0;
 
-                var processor = new ExcelProcessor();
-                var result = processor.CheckCTC(memoryCTC, fileCTC.FileName, memoryQAS, fileQAS.FileName);
+                var result = _processor.CheckCTC(memoryCTC, fileCTC.FileName, memoryQAS, fileQAS.FileName);
 
                 return Ok(result);
             }
@@ -57,10 +56,31 @@ namespace ToolsCTC.Controllers
                 await fileQAS.CopyToAsync(memoryQAS);
                 memoryQAS.Position = 0;
 
-                var processor = new ExcelProcessor();
-                var result = processor.CheckPM(memoryCTC, fileCTC.FileName, memoryQAS, fileQAS.FileName);
+                var result = _processor.CheckPM(memoryCTC, fileCTC.FileName, memoryQAS, fileQAS.FileName);
 
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Lỗi xử lý file: " + ex.Message);
+            }
+        }
+
+        [HttpPost("checkdup")]
+        public async Task<IActionResult> CheckDupAsync([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Không có file.");
+
+            try
+            {
+                using var memoryCTC = new MemoryStream();
+                await file.CopyToAsync(memoryCTC);
+                memoryCTC.Position = 0;
+
+                var rs = _processor.CheckDup(memoryCTC, file.FileName);
+
+                return Ok(rs);
             }
             catch (Exception ex)
             {
