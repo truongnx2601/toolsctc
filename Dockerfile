@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy csproj và restore
 COPY *.sln .
-COPY ToolsCTC.API/*.csproj ./ToolsCTC.API/
+COPY ToolsCTC/*.csproj ./ToolsCTC/
 RUN dotnet restore
 
 # Copy tất cả và build
