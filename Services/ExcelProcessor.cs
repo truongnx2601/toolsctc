@@ -124,6 +124,7 @@
             var lstCheck = list
                 .GroupBy(x => new
                 {
+                    maTC = x.FacID,
                     hoTen = NormalizeVietnamese(x.FullName).Trim().ToLower(),
                     ngaySinh = x.Birthday.Date,
                     ngayTiem = x.VaccineDate.Date,
@@ -137,6 +138,7 @@
             // Mapping sang dạng frontend cần
             var result = lstCheck.Select(x => new ImportsInjection
             {
+                MaTC = x.FacID,
                 HoTen = x.FullName,
                 NgaySinh = x.Birthday,
                 NgayTiem = x.VaccineDate,

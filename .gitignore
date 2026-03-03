@@ -31,6 +31,8 @@ ScaffoldingReadMe.txt
 .env
 *.pfx
 *.key
+appsettings.Development.json
+
 
 # Publish outputs
 /app.publish/
