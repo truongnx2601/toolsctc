@@ -16,15 +16,16 @@
             var lstimp = ReadCTC(streamCTC, nameCTC);
             var inj = ReadQAS(streamQAS, nameQAS);
 
-            // Lọc ra các ca không khớp giữa dữ liệu pm và ctc
-            var lstCheck = inj
-                .Where(i => !lstimp.Any(x =>
-                    NormalizeVietnamese(x.FullName).Equals(NormalizeVietnamese(i.HoTen), StringComparison.OrdinalIgnoreCase)
-                    && x.Birthday.Date == i.NgaySinh.Date
-                    && x.VaccineDate.Date == i.NgayTiem.Date))
+            var pmKeys = new HashSet<string>(
+                lstimp.Select(x => BuildKey(x.FullName, x.Birthday, x.VaccineDate))
+            );
+
+            var result = inj
+                .Where(i => !pmKeys.Contains(
+                    BuildKey(i.HoTen, i.NgaySinh, i.NgayTiem)))
                 .ToList();
 
-            return lstCheck;
+            return result;
         }
 
         private IWorkbook GetWorkbook(Stream stream, string fileName)
@@ -101,20 +102,33 @@
             return result;
         }
 
-        public List<Imports> CheckPM(Stream streamCTC, string nameCTC, Stream streamQAS, string nameQAS)
+        public List<ImportsInjection> CheckPM(Stream streamCTC, string nameCTC, Stream streamQAS, string nameQAS)
         {
             var lstimp = ReadCTC(streamCTC, nameCTC);
             var inj = ReadQAS(streamQAS, nameQAS);
 
-            // Kiểm tra người có trong kế hoạch mà không xuất hiện trong thực tế
+            var injKeys = new HashSet<string>(
+                inj.Select(x => BuildKey(x.HoTen, x.NgaySinh, x.NgayTiem))
+            );
+
             var lstCheck = lstimp
-                .Where(i => !inj.Any(x =>
-                    NormalizeVietnamese(x.HoTen).Equals(NormalizeVietnamese(i.FullName), StringComparison.OrdinalIgnoreCase)
-                    && x.NgaySinh.Date == i.Birthday.Date
-                    && x.NgayTiem.Date == i.VaccineDate.Date))
+                .Where(i => !injKeys.Contains(
+                    BuildKey(i.FullName, i.Birthday, i.VaccineDate)))
                 .ToList();
 
-            return lstCheck;
+            var result = lstCheck.Select(x => new ImportsInjection
+            {
+                MaTC = x.FacID,
+                HoTen = x.FullName,
+                NgaySinh = x.Birthday,
+                NgayTiem = x.VaccineDate,
+                TenVaccine = x.VaccineName,
+                DiaChi = x.Address,
+                SDT = "",
+                NguoiLH = ""
+            }).ToList();
+
+            return result;
         }
 
         public List<ImportsInjection> CheckDup(Stream streamCTC, string nameCTC)
@@ -189,6 +203,11 @@
             // Ghép lại, xóa khoảng trắng dư
             var cleaned = Regex.Replace(sb.ToString(), @"\s+", " ");
             return cleaned.Normalize(NormalizationForm.FormC);
+        }
+
+        private string BuildKey(string name, DateTime birth, DateTime injectDate)
+        {
+            return $"{NormalizeVietnamese(name)}|{birth:yyyyMMdd}|{injectDate:yyyyMMdd}";
         }
 
     }
