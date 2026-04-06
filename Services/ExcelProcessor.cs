@@ -52,7 +52,7 @@
                 {
                     result.Add(new Imports
                     {
-                        FacID = row.GetCell(1)?.ToString() ?? "",
+                        FacID = GetCellString(row.GetCell(1)) ?? "",
                         FullName = row.GetCell(2)?.ToString() ?? "",
                         Birthday = DateTime.ParseExact(row.GetCell(3)?.ToString() ?? "", "dd/MM/yyyy", CultureInfo.InvariantCulture),
                         Gen = row.GetCell(4)?.ToString() ?? "",
@@ -117,7 +117,7 @@
                 {
                     result.Add(new ImportsInjection
                     {
-                        MaTC = row.GetCell(1)?.ToString() ?? "",
+                        MaTC = GetCellString(row.GetCell(1)) ?? "",
                         HoTen = row.GetCell(3)?.ToString() ?? "",
                     });
                 }
@@ -313,12 +313,17 @@
 
         private string BuildKeyByMaTC(string maTC)
         {
-            if (string.IsNullOrWhiteSpace(maTC)) return null;
+            if (string.IsNullOrWhiteSpace(maTC)) return "";
 
-            return maTC
-                .Trim()
-                .ToUpper()
-                .Replace(" ", "");
+            return Regex.Replace(maTC, @"[^0-9]", "");
+        }
+
+        private readonly DataFormatter _formatter = new DataFormatter();
+        private string GetCellString(ICell cell)
+        {
+            if (cell == null) return "";
+
+            return _formatter.FormatCellValue(cell)?.Trim() ?? "";
         }
 
     }
