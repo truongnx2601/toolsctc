@@ -108,7 +108,7 @@
             var wb = GetWorkbook(stream, fileName);
             var sheet = wb.GetSheetAt(0);
 
-            for (int i = 6; i <= sheet.LastRowNum; i++)
+            for (int i = 1; i <= sheet.LastRowNum; i++)
             {
                 var row = sheet.GetRow(i);
                 if (row == null || string.IsNullOrWhiteSpace(GetCellString(row.GetCell(0)))) continue;
@@ -232,21 +232,21 @@
 
         public List<ImportsInjection> CheckErr(Stream streamCTC, string nameCTC, Stream streamQAS, string nameQAS)
         {
-            var ctcList = ReadCTC(streamCTC, nameCTC);
-            var pmList = ReadPM(streamQAS, nameQAS);
+            var ctc = ReadCTC(streamCTC, nameCTC);
+            var qas = ReadPM(streamQAS, nameQAS);
 
-            var ctcGroup = ctcList
+            var ctcGroup = ctc
                 .Where(x => !string.IsNullOrWhiteSpace(x.FacID))
                 .GroupBy(x => BuildKeyByMaTC(x.FacID))
-                .ToDictionary(g => g.Key, g => g.Count());
+                .ToDictionary(g => g.Key, g => g.ToList());
 
-            var pmGroup = pmList
+            var qasGroup = qas
                 .Where(x => !string.IsNullOrWhiteSpace(x.MaTC))
                 .GroupBy(x => BuildKeyByMaTC(x.MaTC))
-                .ToDictionary(g => g.Key, g => g.Count());
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             var allKeys = new HashSet<string>(ctcGroup.Keys);
-            allKeys.UnionWith(pmGroup.Keys);
+            allKeys.UnionWith(qasGroup.Keys);
 
             var result = new List<ImportsInjection>();
 
@@ -254,25 +254,53 @@
             {
                 if (string.IsNullOrWhiteSpace(key)) continue;
 
-                int countCTC = ctcGroup.ContainsKey(key) ? ctcGroup[key] : 0;
-                int countPM = pmGroup.ContainsKey(key) ? pmGroup[key] : 0;
+                int c1 = ctcGroup.ContainsKey(key) ? ctcGroup[key].Count : 0;
+                int c2 = qasGroup.ContainsKey(key) ? qasGroup[key].Count : 0;
 
-                if (countCTC == countPM) continue; // số lượng bằng nhau → không báo lỗi
+                if (c1 == c2) continue;
 
-                // Chọn sample để lấy tên (HoTen)
-                string hoTen = pmList.FirstOrDefault(x => BuildKeyByMaTC(x.MaTC) == key)?.HoTen
-                                ?? ctcList.FirstOrDefault(x => BuildKeyByMaTC(x.FacID) == key)?.FullName
-                                ?? "";
+                ImportsInjection record;
 
-                result.Add(new ImportsInjection
+                if (c1 > c2)
                 {
-                    MaTC = key,
-                    HoTen = hoTen,
-                    CountCTC = countCTC,
-                    CountQAS = countPM,
-                    Status = countCTC > countPM ? "THIEU_PM" : "DU_PM",
-                    Note = "Có sự khác biệt về số lượng mũi tiêm trên CTC/PM"
-                });
+                    var sample = ctcGroup[key].First();
+
+                    record = new ImportsInjection
+                    {
+                        MaTC = sample.FacID,
+                        HoTen = sample.FullName,
+                        NgaySinh = sample.Birthday,
+                        NgayTiem = sample.VaccineDate,
+                        TenVaccine = sample.VaccineName,
+                        DiaChi = sample.Address,
+
+                        CountCTC = c1,
+                        CountQAS = c2,
+                        Status = "THIEU_PM",
+                        Note = "Có sự khác biệt về số lượng mũi tiêm trên CTC/PM"
+                    };
+                }
+                else
+                {
+                    var sample = qasGroup[key].First();
+
+                    record = new ImportsInjection
+                    {
+                        MaTC = sample.MaTC,
+                        HoTen = sample.HoTen,
+                        NgaySinh = sample.NgaySinh,
+                        NgayTiem = sample.NgayTiem,
+                        TenVaccine = sample.TenVaccine,
+                        DiaChi = sample.DiaChi,
+
+                        CountCTC = c1,
+                        CountQAS = c2,
+                        Status = "DU_PM",
+                        Note = "Có sự khác biệt về số lượng mũi tiêm trên CTC/PM"
+                    };
+                }
+
+                result.Add(record);
             }
 
             return result;
