@@ -12,21 +12,21 @@
     public class ExcelProcessor
     {
         public List<ImportsInjection> CheckCTC(Stream streamCTC, string nameCTC, Stream streamQAS, string nameQAS)
-        {
-            var lstimp = ReadCTC(streamCTC, nameCTC);
-            var inj = ReadQAS(streamQAS, nameQAS);
+{
+    var lstimp = ReadCTC(streamCTC, nameCTC);
+    var inj = ReadQAS(streamQAS, nameQAS);
 
-            var pmKeys = new HashSet<string>(
-                lstimp.Select(x => BuildKey(x.FullName, x.Birthday, x.VaccineDate))
-            );
+    var pmKeys = new HashSet<string>(
+        lstimp.Select(x => BuildKey(x.FullName, x.Birthday, x.VaccineDate))
+    );
 
-            var result = inj
-                .Where(i => !pmKeys.Contains(
-                    BuildKey(i.HoTen, i.NgaySinh, i.NgayTiem)))
-                .ToList();
+    var result = inj
+        .Where(i => !pmKeys.Contains(
+            BuildKey(i.HoTen, i.NgaySinh, i.NgayTiem)))
+        .ToList();
 
-            return result;
-        }
+    return result;
+}
 
         private IWorkbook GetWorkbook(Stream stream, string fileName)
         {
@@ -94,6 +94,31 @@
                         NguoiLH = row.GetCell(7)?.ToString() ?? "",
                         SDT = row.GetCell(8)?.ToString() ?? "",
                         TenVaccine = row.GetCell(11)?.ToString() ?? ""
+                    });
+                }
+                catch { }
+            }
+
+            return result;
+        }
+
+        private List<ImportsInjection> ReadPM(Stream stream, string fileName)
+        {
+            var result = new List<ImportsInjection>();
+            var wb = GetWorkbook(stream, fileName);
+            var sheet = wb.GetSheetAt(0);
+
+            for (int i = 6; i <= sheet.LastRowNum; i++)
+            {
+                var row = sheet.GetRow(i);
+                if (row == null || string.IsNullOrWhiteSpace(row.GetCell(0)?.ToString())) continue;
+
+                try
+                {
+                    result.Add(new ImportsInjection
+                    {
+                        MaTC = row.GetCell(1)?.ToString() ?? "",
+                        HoTen = row.GetCell(3)?.ToString() ?? "",
                     });
                 }
                 catch { }
@@ -205,9 +230,87 @@
             return cleaned.Normalize(NormalizationForm.FormC);
         }
 
+        public List<ImportsInjection> CheckErr(Stream streamCTC, string nameCTC, Stream streamQAS, string nameQAS)
+        {
+            var ctc = ReadCTC(streamCTC, nameCTC);
+            var qas = ReadPM(streamQAS, nameQAS);
+
+            // Group theo MaTC
+            var ctcGroup = ctc
+                .GroupBy(x => BuildKeyByMaTC(x.FacID))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var qasGroup = qas
+                .GroupBy(x => BuildKeyByMaTC(x.MaTC))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var allKeys = new HashSet<string>(ctcGroup.Keys);
+            allKeys.UnionWith(qasGroup.Keys);
+
+            var result = new List<ImportsInjection>();
+
+            foreach (var key in allKeys)
+            {
+                int c1 = ctcGroup.ContainsKey(key) ? ctcGroup[key].Count : 0;
+                int c2 = qasGroup.ContainsKey(key) ? qasGroup[key].Count : 0;
+
+                if (c1 == c2) continue;
+
+                ImportsInjection record;
+
+                if (c1 > c2)
+                {
+                    var sample = ctcGroup[key].First();
+
+                    record = new ImportsInjection
+                    {
+                        MaTC = sample.FacID,
+                        HoTen = sample.FullName,
+                        NgaySinh = sample.Birthday,
+                        NgayTiem = sample.VaccineDate,
+                        TenVaccine = sample.VaccineName,
+                        DiaChi = sample.Address,
+
+                        CountCTC = c1,
+                        CountQAS = c2,
+                        Status = "THIEU_PM",
+                        Note = "Có sự khác biệt về số lượng mũi tiêm trên CTC/PM"
+                    };
+                }
+                else
+                {
+                    var sample = qasGroup[key].First();
+
+                    record = new ImportsInjection
+                    {
+                        MaTC = sample.MaTC,
+                        HoTen = sample.HoTen,
+                        NgaySinh = sample.NgaySinh,
+                        NgayTiem = sample.NgayTiem,
+                        TenVaccine = sample.TenVaccine,
+                        DiaChi = sample.DiaChi,
+
+                        CountCTC = c1,
+                        CountQAS = c2,
+                        Status = "DU_PM",
+                        Note = "Có sự khác biệt về số lượng mũi tiêm trên CTC/PM"
+                    };
+                }
+
+                result.Add(record);
+            }
+
+            return result;
+        }
+
         private string BuildKey(string name, DateTime birth, DateTime injectDate)
         {
             return $"{NormalizeVietnamese(name)}|{birth:yyyyMMdd}|{injectDate:yyyyMMdd}";
+        }
+
+        private string BuildKeyByMaTC(string maTC)
+        {
+            return maTC?.Trim().ToUpper();
         }
 
     }

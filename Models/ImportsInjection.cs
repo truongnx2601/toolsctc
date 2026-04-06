@@ -13,5 +13,9 @@
         public string NguoiLH { get; set; }
         public string SDT { get; set; }
         public string TenVaccine { get; set; }
+        public int CountCTC { get; set; }
+        public int CountQAS { get; set; }
+        public string Status { get; set; }
+        public string Note { get; set; }
     }
 }

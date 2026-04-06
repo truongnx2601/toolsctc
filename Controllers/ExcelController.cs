@@ -88,5 +88,18 @@ namespace ToolsCTC.Controllers
             }
         }
 
+        [HttpPost("checkerr")]
+        public IActionResult CheckErr(IFormFile fileCTC, IFormFile filePM)
+        {
+            using var streamCTC = fileCTC.OpenReadStream();
+            using var streamPM = filePM.OpenReadStream();
+
+            var result = _processor.CheckErr(
+                streamCTC, fileCTC.FileName,
+                streamPM, filePM.FileName
+            );
+
+            return Ok(result);
+        }
     }
 }
