@@ -235,12 +235,13 @@
             var ctc = ReadCTC(streamCTC, nameCTC);
             var qas = ReadPM(streamQAS, nameQAS);
 
-            // Group theo MaTC
             var ctcGroup = ctc
+                .Where(x => !string.IsNullOrWhiteSpace(x.FacID))
                 .GroupBy(x => BuildKeyByMaTC(x.FacID))
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var qasGroup = qas
+                .Where(x => !string.IsNullOrWhiteSpace(x.MaTC))
                 .GroupBy(x => BuildKeyByMaTC(x.MaTC))
                 .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -251,6 +252,8 @@
 
             foreach (var key in allKeys)
             {
+                if (string.IsNullOrWhiteSpace(key)) continue;
+
                 int c1 = ctcGroup.ContainsKey(key) ? ctcGroup[key].Count : 0;
                 int c2 = qasGroup.ContainsKey(key) ? qasGroup[key].Count : 0;
 
@@ -310,7 +313,12 @@
 
         private string BuildKeyByMaTC(string maTC)
         {
-            return maTC?.Trim().ToUpper();
+            if (string.IsNullOrWhiteSpace(maTC)) return null;
+
+            return maTC
+                .Trim()
+                .ToUpper()
+                .Replace(" ", "");
         }
 
     }
