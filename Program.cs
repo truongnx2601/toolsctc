@@ -39,6 +39,8 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("⚠️ Connection string không được cấu hình. Kiểm tra biến môi trường 'ConnectionStrings__DefaultConnection'.");
 }
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddScoped<IDbConnection>(sp =>
     new NpgsqlConnection(connectionString)); // Dùng PostgreSQL
 
@@ -54,7 +56,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors("AppCorsPolicy");
-
+app.MapHealthChecks("/health");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
